@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "namespace": "com.iamninad.model",
+  "doc":"This event records the sale of a product",
+  "name": "GenericWrapper",
+  "fields" : [
+        {
+            "name" : "table_name" ,
+            "type" : "string"
+        },
+        {
+            "name" : "schema_fingerprint",
+            "type" : "long"
+        },
+        {
+            "name" : "payload",
+            "type" : "bytes"
+        }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "namespace": "com.iamninad.model",
+  "doc":"This event records the sale of a product",
+  "name": "Employee",
+  "fields" : [
+{ "name" : "Name" , "type" : "string" },
+      { "name" : "Age" , "type" : "int" }
+  ]
+}
