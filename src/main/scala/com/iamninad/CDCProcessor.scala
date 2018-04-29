@@ -13,7 +13,6 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
-import org.apache.kafka.streams.kstream.Printed
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 object CDCProcessor extends App {
@@ -21,7 +20,7 @@ object CDCProcessor extends App {
 
   val config = {
     val props = new Properties()
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "helloWorld-16")
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "events-1")
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", classOf[KafkaAvroSerializer].getName)
@@ -74,11 +73,17 @@ object CDCProcessor extends App {
       .groupByKey
       .reduce((old: MovieSales, newSale: MovieSales) => newSale)
 
-    envelopExtractedMovie.join(envelopeExtractedSale,
-                               (movie: Movie, movieSale: MovieSales) => MovieAndSalesBEvent(movie, movieSale))
+    envelopExtractedMovie.join(envelopeExtractedSale, (movie: Movie, movieSale: MovieSales) => {
+      MovieAndSalesBEvent(movie, movieSale)
+    })
   }
 
-  createMovieBusinessEvent.print(Printed.toSysOut())
+  def sendMovieBussinessEventToTopic = {
+    import AppSerdes.movieBEventSerde.produced
+    createMovieBusinessEvent.to("events")
+  }
+
+  sendMovieBussinessEventToTopic
 
   private val streams = new KafkaStreams(builder.build(), config)
   streams.start()
