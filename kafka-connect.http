@@ -1,0 +1,9 @@
+
+
+POST http://localhost:8083/connectors
+Accept: application/json
+Content-Type: application/json
+
+< test.json
+###
+
