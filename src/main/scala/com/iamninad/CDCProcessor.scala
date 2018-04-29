@@ -1,7 +1,6 @@
 package com.iamninad
 
 import java.util.Properties
-import java.util.concurrent.TimeUnit
 
 import com.iamninad.model.MovieAndSalesBEvent
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
@@ -14,7 +13,7 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
-import org.apache.kafka.streams.kstream.{JoinWindows, Materialized, Printed}
+import org.apache.kafka.streams.kstream.Printed
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 object CDCProcessor extends App {
