@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.iamninad.model.MovieAndSalesBEvent
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
 import dbserver1.moviedemo.MOVIE
-import dbserver1.moviedemo.MOVIE.Value
+import dbserver1.moviedemo.MOVIE.Movie
 import dbserver1.moviedemo.MOVIE_SALES.{Envelope, MovieSales}
 import io.confluent.kafka.serializers.{
   AbstractKafkaAvroSerDeConfig,
@@ -68,7 +68,7 @@ object CDCProcessor extends App {
     val movieStream = filterMovieStreamForCreations
     val salesStream = filterSalesStreamForCreations
 
-    val envelopExtractedMovie: KStreamS[Int, Value] =
+    val envelopExtractedMovie: KStreamS[Int, Movie] =
       movieStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
     val envelopeExtractedSale: KTableS[Int, MovieSales] = salesStream
       .map((stringId: String, value) => (value.after.get.movie_id.get, value.after.get))
@@ -76,7 +76,7 @@ object CDCProcessor extends App {
       .reduce((old: MovieSales, newSale: MovieSales) => newSale)
 
     envelopExtractedMovie.join(envelopeExtractedSale,
-                               (movie: Value, movieSale: MovieSales) => MovieAndSalesBEvent(movie, movieSale))
+                               (movie: Movie, movieSale: MovieSales) => MovieAndSalesBEvent(movie, movieSale))
   }
 
   createMovieBusinessEvent.print(Printed.toSysOut())

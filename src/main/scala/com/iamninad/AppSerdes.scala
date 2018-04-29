@@ -7,7 +7,7 @@ import dbserver1.moviedemo.{MOVIE, MOVIE_SALES}
 import org.apache.kafka.streams.Consumed
 import DefaultSerdes._
 import com.iamninad.model.MovieAndSalesBEvent
-import dbserver1.moviedemo.MOVIE.Value
+import dbserver1.moviedemo.MOVIE.Movie
 import org.apache.kafka.streams.kstream.{Joined, Serialized}
 
 object AppSerdes {
@@ -25,15 +25,15 @@ object AppSerdes {
   }
 
   object movieBEventSerde {
-    implicit val movieFormat = RecordFormat[Value]
+    implicit val movieFormat = RecordFormat[Movie]
     implicit val saleFormat  = RecordFormat[MovieSales]
     implicit val format      = RecordFormat[MovieAndSalesBEvent]
 
-    val movieSerde = new CaseClassSerde[Value](isKey = false)
+    val movieSerde = new CaseClassSerde[Movie](isKey = false)
     val salesSerde = new CaseClassSerde[MovieSales](isKey = false)
 
     val serde                                           = new CaseClassSerde[MovieAndSalesBEvent](isKey = false)
-    implicit val joined: Joined[Int, Value, MovieSales] = Joined.`with`(integerSerde, movieSerde, salesSerde)
+    implicit val joined: Joined[Int, Movie, MovieSales] = Joined.`with`(integerSerde, movieSerde, salesSerde)
     implicit val movieSerialized                        = Serialized.`with`(integerSerde, movieSerde)
     implicit val salesSerialized                        = Serialized.`with`(integerSerde, salesSerde)
   }
