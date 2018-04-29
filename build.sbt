@@ -19,6 +19,8 @@ libraryDependencies += "org.apache.kafka" %% "kafka" % "1.1.0"
 libraryDependencies += "org.apache.avro" % "avro" % "1.8.1"
 libraryDependencies += "com.lightbend" %% "kafka-streams-scala" % "0.2.1"
 libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
+libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
+
 
 
 avroSpecificSourceDirectory := new File("src/main/scala/avro")
