@@ -1,4 +1,4 @@
-package dbserver1.moviedemo.MOVIE
+package dbserver1.moviedemo.movie
 
 case class Movie(movie_id: Option[Int] = None,
                  title: Option[String] = None,

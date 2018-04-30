@@ -1,15 +1,18 @@
 package com.iamninad
 
 import com.sksamuel.avro4s._
-import dbserver1.moviedemo.MOVIE.Envelope
+import dbserver1.moviedemo.movie.Envelope
 import io.confluent.kafka.serializers._
 import org.apache.avro.generic._
 import org.apache.kafka.common.serialization._
 
-class CaseClassSerde[CC](schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(implicit format: RecordFormat[CC]) extends Serde[CC] {
-  private class CaseClassDeserializer(schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(implicit format: RecordFormat[CC]) extends Deserializer[CC] {
+class CaseClassSerde[CC](schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(implicit format: RecordFormat[CC])
+    extends Serde[CC] {
+  private class CaseClassDeserializer(schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(
+    implicit format: RecordFormat[CC]
+  ) extends Deserializer[CC] {
     private val deserializer = {
-      val s = new KafkaAvroDeserializer()
+      val s       = new KafkaAvroDeserializer()
       val configs = new java.util.HashMap[String, Any]()
       configs.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl)
       configs.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "false")
@@ -27,9 +30,11 @@ class CaseClassSerde[CC](schemaRegistryUrl: String = "http://localhost:8081", is
     }
   }
 
-  private class CaseClassSerializer(schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(implicit format: RecordFormat[CC]) extends Serializer[CC] {
+  private class CaseClassSerializer(schemaRegistryUrl: String = "http://localhost:8081", isKey: Boolean)(
+    implicit format: RecordFormat[CC]
+  ) extends Serializer[CC] {
     private val serializer = {
-      val s = new KafkaAvroSerializer()
+      val s       = new KafkaAvroSerializer()
       val configs = new java.util.HashMap[String, Any]()
       configs.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl)
       s.configure(configs, isKey)
