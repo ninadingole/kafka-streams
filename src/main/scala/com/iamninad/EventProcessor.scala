@@ -2,6 +2,7 @@ package com.iamninad
 
 import java.util.Properties
 
+import com.iamninad.event.deserializer.MovieCreatedEventDeserializer
 import com.iamninad.model.BusinessEvent
 import com.lightbend.kafka.scala.streams.StreamsBuilderS
 import io.confluent.kafka.serializers.{
@@ -10,7 +11,6 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
-import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 
@@ -22,7 +22,7 @@ object EventProcessor extends App {
 
   val config = {
     val props = new Properties()
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "processor-6")
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "processor-10")
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", classOf[KafkaAvroSerializer].getName)
@@ -47,29 +47,10 @@ object EventProcessor extends App {
     val moviedemoDatabase: MongoDatabase  = mongoClient.getDatabase("moviedemo")
     val movies: MongoCollection[Document] = moviedemoDatabase.getCollection("movies")
 
-    if (!event.events.isEmpty) {
-
-      val deserializer = new KafkaAvroDeserializer()
-      deserializer.configure(schemaConfig, false)
-      val events               = event.events
-      val maybeBytes           = events.get("movie")
-      val value: GenericRecord = deserializer.deserialize("events", maybeBytes.get).asInstanceOf[GenericRecord]
-      val movie                = AppSerdes.movieBEventSerde.movieFormat.from(value)
-      println(movie)
-
-      val saleByteMessagae  = events.get("sale")
-      val genericRecordSale = deserializer.deserialize("events", saleByteMessagae.get).asInstanceOf[GenericRecord]
-      val sales             = AppSerdes.movieBEventSerde.saleFormat.from(genericRecordSale)
-      println(sales)
-
-      val doc = Document("movie_id" -> movie.movie_id,
-                         "title"  -> movie.title,
-                         "year"   -> movie.year,
-                         "budget" -> movie.budget,
-                         "sales"  -> Document("total" -> sales.total))
-
+    val value = new MovieCreatedEventDeserializer(event).get
+    if (value.isDefined) {
+      val doc = value.get
       movies.insertOne(document = doc).toFuture().onComplete(_ => println(s"Inserted ${doc}"))
-
     }
 
   })
