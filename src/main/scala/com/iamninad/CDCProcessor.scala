@@ -2,6 +2,7 @@ package com.iamninad
 
 import java.util.Properties
 
+import com.iamninad.filter.{MovieCreatedFilter, MovieUpdateFilter}
 import com.iamninad.model.BusinessEvent
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
 import com.sksamuel.avro4s.RecordFormat
@@ -63,30 +64,14 @@ object CDCProcessor extends App {
       })
   }
 
-  def filterMovieStreamForCreations = {
-    movieStream
-      .filter((id, value) => {
-        println("filtering movie creation messsage")
-        value.op.equalsIgnoreCase("C")
-      })
-  }
-
-  def filterMovieStreamForUpdates = {
-    movieStream
-      .filter((id, value) => {
-        println("filtering movies for updates")
-        value.op.equalsIgnoreCase("u")
-      })
-  }
-
   def createMovieBusinessEvent = {
     import AppSerdes.movieBEventSerde.{joined, salesSerialized}
-    val movieStream = filterMovieStreamForCreations
-    val salesStream = filterSalesStreamForCreations
+    val movieFilteredStream = new MovieCreatedFilter().filter(movieStream)
+    val salesFilteredStream = filterSalesStreamForCreations
 
     val envelopExtractedMovie: KStreamS[Int, Movie] =
-      movieStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
-    val envelopeExtractedSale: KTableS[Int, MovieSales] = salesStream
+      movieFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
+    val envelopeExtractedSale: KTableS[Int, MovieSales] = salesFilteredStream
       .map((stringId: String, value) => (value.after.get.movie_id.get, value.after.get))
       .groupByKey
       .reduce((old: MovieSales, newSale: MovieSales) => newSale)
@@ -112,7 +97,8 @@ object CDCProcessor extends App {
   emitMovieBussinessEventToTopic
 
   def createMovieUpdateEvent = {
-    filterMovieStreamForUpdates.map((id, envelop) => {
+    val updateStream = new MovieUpdateFilter().filter(movieStream)
+    updateStream.map((id, envelop) => {
       val before = envelop.before.get
       val after  = envelop.after.get
 
