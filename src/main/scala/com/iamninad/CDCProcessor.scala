@@ -4,6 +4,7 @@ import java.util.Properties
 
 import com.iamninad.model.BusinessEvent
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
+import com.sksamuel.avro4s.RecordFormat
 import dbserver1.moviedemo.movie
 import dbserver1.moviedemo.movie.Movie
 import dbserver1.moviedemo.moviesales.{Envelope, MovieSales}
@@ -13,7 +14,9 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
+import org.apache.kafka.streams.kstream.Printed
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
+
 import scala.collection.JavaConverters._
 
 object CDCProcessor extends App {
@@ -21,7 +24,7 @@ object CDCProcessor extends App {
 
   val config = {
     val props = new Properties()
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "events-2")
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "events-5")
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", classOf[KafkaAvroSerializer].getName)
@@ -49,8 +52,11 @@ object CDCProcessor extends App {
     builder.stream[String, Envelope](getTopic("movie_sales"))
   }
 
+  val movieStream = buildMovieStream
+  val saleStream  = buildMovieSalesStream
+
   private def filterSalesStreamForCreations = {
-    buildMovieSalesStream
+    saleStream
       .filter((id, value) => {
         println("filtering sales creation message")
         value.op.equalsIgnoreCase("c")
@@ -58,10 +64,18 @@ object CDCProcessor extends App {
   }
 
   def filterMovieStreamForCreations = {
-    buildMovieStream
+    movieStream
       .filter((id, value) => {
         println("filtering movie creation messsage")
         value.op.equalsIgnoreCase("C")
+      })
+  }
+
+  def filterMovieStreamForUpdates = {
+    movieStream
+      .filter((id, value) => {
+        println("filtering movies for updates")
+        value.op.equalsIgnoreCase("u")
       })
   }
 
@@ -90,12 +104,35 @@ object CDCProcessor extends App {
     })
   }
 
-  def sendMovieBussinessEventToTopic = {
+  def emitMovieBussinessEventToTopic = {
     import AppSerdes.movieBEventSerde.eventProduced
     createMovieBusinessEvent.to("events")
   }
 
-  sendMovieBussinessEventToTopic
+  emitMovieBussinessEventToTopic
+
+  def createMovieUpdateEvent = {
+    filterMovieStreamForUpdates.map((id, envelop) => {
+      val before = envelop.before.get
+      val after  = envelop.after.get
+
+      val serializer = new KafkaAvroSerializer()
+      serializer.configure(schemaConfig, false)
+
+      val beforeMovieSerialized = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(before))
+      val afterMovieSerialized  = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(after))
+
+      (after.movie_id.get,
+       BusinessEvent("MovieUpdateEvent", Map("before" -> beforeMovieSerialized, "after" -> afterMovieSerialized)))
+    })
+  }
+
+  def emitMovieUpdateEvent = {
+    import AppSerdes.movieBEventSerde.eventProduced
+    createMovieUpdateEvent.to("events")
+  }
+
+  emitMovieUpdateEvent
 
   private val streams = new KafkaStreams(builder.build(), config)
   streams.start()

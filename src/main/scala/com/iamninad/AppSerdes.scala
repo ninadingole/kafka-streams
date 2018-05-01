@@ -16,6 +16,8 @@ object AppSerdes {
     implicit val format                                     = RecordFormat[movie.Envelope]
     val movieEnvelopserde                                   = new CaseClassSerde[movie.Envelope](isKey = false)
     implicit val consumed: Consumed[String, movie.Envelope] = Consumed.`with`(stringSerde, movieEnvelopserde)
+    implicit val produced: Produced[String, movie.Envelope] = Produced.`with`(stringSerde, movieEnvelopserde)
+
   }
 
   object movieSalesSerde {
