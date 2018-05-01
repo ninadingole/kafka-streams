@@ -1,22 +1,18 @@
 package com.iamninad.filter
 
-import com.iamninad.{AppSerdes, CaseClassSerde}
-import com.lightbend.kafka.scala.streams.{KStreamS, StreamsBuilderS}
-import dbserver1.moviedemo.movie.{Envelope, Movie}
-import net.manub.embeddedkafka.{Codecs, EmbeddedKafka, EmbeddedKafkaConfig}
-import net.manub.embeddedkafka.streams.EmbeddedKafkaStreamsAllInOne
-import org.scalatest.{FunSuite, Matchers}
-import net.manub.embeddedkafka.ConsumerExtensions._
-import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords}
-import org.apache.kafka.streams.kstream.Serialized
-import com.lightbend.kafka.scala.streams.DefaultSerdes._
+import com.iamninad.{AppSerdes, BaseKafkaStreamTest, CaseClassSerde}
+import com.lightbend.kafka.scala.streams.StreamsBuilderS
 import com.sksamuel.avro4s.RecordFormat
+import dbserver1.moviedemo.movie.{Envelope, Movie}
 import io.debezium.connector.mysql.Source
+import net.manub.embeddedkafka.ConsumerExtensions._
+import net.manub.embeddedkafka.streams.EmbeddedKafkaStreamsAllInOne
+import net.manub.embeddedkafka.{Codecs, EmbeddedKafkaConfig}
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.{Deserializer, Serializer}
+import org.scalatest.{FunSuite, Matchers}
 
-import scala.collection.immutable
-
-class MovieCreatedFilterTest extends FunSuite with Matchers with EmbeddedKafkaStreamsAllInOne {
+class MovieCreatedFilterTest extends BaseKafkaStreamTest {
   implicit val config =
     EmbeddedKafkaConfig(kafkaPort = 7000, zooKeeperPort = 7001)
 
