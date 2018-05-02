@@ -14,15 +14,13 @@ import io.confluent.kafka.serializers.{
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 
-import scala.collection.JavaConverters._
-
 object EventProcessor extends App {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val config = {
     val props = new Properties()
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "processor-10")
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "processor-11")
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", classOf[KafkaAvroSerializer].getName)
@@ -34,8 +32,6 @@ object EventProcessor extends App {
   }
 
   private val builder = new StreamsBuilderS()
-
-  private val schemaConfig = Map("schema.registry.url" -> "http://localhost:8081", "auto.register.schemas" -> "true").asJava
 
   def buildEventStream = {
     import AppSerdes.movieBEventSerde.eventConsumed

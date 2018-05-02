@@ -4,8 +4,8 @@ import java.util.Properties
 
 import com.iamninad.filter.{MovieCreatedFilter, MovieUpdateFilter}
 import com.iamninad.model.BusinessEvent
+import com.iamninad.util.Utils
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
-import com.sksamuel.avro4s.RecordFormat
 import dbserver1.moviedemo.movie
 import dbserver1.moviedemo.movie.Movie
 import dbserver1.moviedemo.moviesales.{Envelope, MovieSales}
@@ -15,17 +15,15 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
-import org.apache.kafka.streams.kstream.Printed
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 import scala.collection.JavaConverters._
 
 object CDCProcessor extends App {
-  private val TOPIC_PREFIX = "dbserver1.moviedemo."
 
   val config = {
     val props = new Properties()
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "events-5")
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "events-16")
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", classOf[KafkaAvroSerializer].getName)
@@ -37,20 +35,16 @@ object CDCProcessor extends App {
   }
   private val schemaConfig = Map("schema.registry.url" -> "http://localhost:8081", "auto.register.schemas" -> "true").asJava
 
-  private def getTopic(topicName: String): String = {
-    TOPIC_PREFIX + topicName
-  }
-
   private val builder = new StreamsBuilderS()
 
   private def buildMovieStream: KStreamS[String, movie.Envelope] = {
     import AppSerdes.movieSerde.consumed
-    builder.stream[String, movie.Envelope](getTopic("movie"))
+    builder.stream[String, movie.Envelope](Utils.getTopic("movie"))
   }
 
   private def buildMovieSalesStream = {
     import AppSerdes.movieSalesSerde.consumed
-    builder.stream[String, Envelope](getTopic("movie_sales"))
+    builder.stream[String, Envelope](Utils.getTopic("movie_sales"))
   }
 
   val movieStream = buildMovieStream
@@ -72,16 +66,17 @@ object CDCProcessor extends App {
     val envelopExtractedMovie: KStreamS[Int, Movie] =
       movieFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
     val envelopeExtractedSale: KTableS[Int, MovieSales] = salesFilteredStream
-      .map((stringId: String, value) => (value.after.get.movie_id.get, value.after.get))
+      .map((_: String, value) => (value.after.get.movie_id.get, value.after.get))
       .groupByKey
-      .reduce((old: MovieSales, newSale: MovieSales) => newSale)
+      .reduce((_: MovieSales, newSale: MovieSales) => newSale)
 
     envelopExtractedMovie.join(envelopeExtractedSale, (movie: Movie, movieSale: MovieSales) => {
       println("Created Business Event")
       val serializer = new KafkaAvroSerializer()
       serializer.configure(schemaConfig, false)
-      val movieSerialized = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(movie))
-      val salesSerialized = serializer.serialize("events", AppSerdes.movieBEventSerde.saleFormat.to(movieSale))
+      val movieSerialized = serializer.serialize(Utils.getTopic("movie"), AppSerdes.movieBEventSerde.movieFormat.to(movie))
+      val salesSerialized =
+        serializer.serialize(Utils.getTopic("movie_sales"), AppSerdes.movieBEventSerde.saleFormat.to(movieSale))
 
       val map = Map("movie" -> movieSerialized, "sale" -> salesSerialized)
       BusinessEvent("MovieCreatedEvent", map)

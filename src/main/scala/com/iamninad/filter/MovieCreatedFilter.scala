@@ -8,7 +8,7 @@ class MovieCreatedFilter {
   def filter(stream: KStreamS[String, Envelope]) = {
     stream
       .filter((id, value) => {
-        println("filtering sales creation message")
+        println("filtering movie creation message")
         value.op.equalsIgnoreCase("c")
       })
   }

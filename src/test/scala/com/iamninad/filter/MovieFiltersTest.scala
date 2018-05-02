@@ -6,11 +6,9 @@ import com.sksamuel.avro4s.RecordFormat
 import dbserver1.moviedemo.movie.{Envelope, Movie}
 import io.debezium.connector.mysql.Source
 import net.manub.embeddedkafka.ConsumerExtensions._
-import net.manub.embeddedkafka.streams.EmbeddedKafkaStreamsAllInOne
 import net.manub.embeddedkafka.{Codecs, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.{Deserializer, Serializer}
-import org.scalatest.{FunSuite, Matchers}
 
 class MovieFiltersTest extends BaseKafkaStreamTest {
   implicit val config =
