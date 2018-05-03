@@ -4,7 +4,7 @@ import java.util.Properties
 
 import com.iamninad.filter.{MovieCreatedFilter, MovieUpdateFilter}
 import com.iamninad.model.BusinessEvent
-import com.iamninad.util.Utils
+import com.iamninad.util.{EventTypes, Utils}
 import com.lightbend.kafka.scala.streams.{KStreamS, KTableS, StreamsBuilderS}
 import dbserver1.moviedemo.movie
 import dbserver1.moviedemo.movie.Movie
@@ -79,7 +79,7 @@ object CDCProcessor extends App {
         serializer.serialize(Utils.getTopic("movie_sales"), AppSerdes.movieBEventSerde.saleFormat.to(movieSale))
 
       val map = Map("movie" -> movieSerialized, "sale" -> salesSerialized)
-      BusinessEvent("MovieCreatedEvent", map)
+      BusinessEvent(EventTypes.`MOVIECREATEEVENT`, map)
 
     })
   }
@@ -104,7 +104,7 @@ object CDCProcessor extends App {
       val afterMovieSerialized  = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(after))
 
       (after.movie_id.get,
-       BusinessEvent("MovieUpdateEvent", Map("before" -> beforeMovieSerialized, "after" -> afterMovieSerialized)))
+       BusinessEvent(EventTypes.`MOVIEUPDATEEVENT`, Map("before" -> beforeMovieSerialized, "after" -> afterMovieSerialized)))
     })
   }
 

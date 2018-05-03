@@ -4,7 +4,8 @@ import java.util.Properties
 
 import com.iamninad.event.deserializer.MovieCreatedEventDeserializer
 import com.iamninad.model.BusinessEvent
-import com.lightbend.kafka.scala.streams.StreamsBuilderS
+import com.iamninad.util.EventTypes
+import com.lightbend.kafka.scala.streams.{KStreamS, StreamsBuilderS}
 import io.confluent.kafka.serializers.{
   AbstractKafkaAvroSerDeConfig,
   KafkaAvroDeserializer,
@@ -38,10 +39,17 @@ object EventProcessor extends App {
     builder.stream[Int, BusinessEvent]("events")
   }
 
-  buildEventStream.foreach((id, event) => {
-    val mongoClient                       = MongoClient("mongodb://localhost:27017")
-    val moviedemoDatabase: MongoDatabase  = mongoClient.getDatabase("moviedemo")
-    val movies: MongoCollection[Document] = moviedemoDatabase.getCollection("movies")
+  val mongoClient                       = MongoClient("mongodb://localhost:27017")
+  val moviedemoDatabase: MongoDatabase  = mongoClient.getDatabase("moviedemo")
+  val movies: MongoCollection[Document] = moviedemoDatabase.getCollection("movies")
+
+  private val eventStreams: KStreamS[Int, BusinessEvent] = buildEventStream
+
+  def filterEventsByType(eventType: String): KStreamS[Int, BusinessEvent] = {
+    eventStreams.filter((_: Int, event: BusinessEvent) => event.eventType.equalsIgnoreCase(eventType))
+  }
+
+  filterEventsByType(EventTypes.`MOVIECREATEEVENT`).foreach((id, event) => {
 
     val value = new MovieCreatedEventDeserializer(event).get
     if (value.isDefined) {
@@ -50,6 +58,8 @@ object EventProcessor extends App {
     }
 
   })
+
+  filterEventsByType(EventTypes.`MOVIEUPDATEEVENT`).
 
   private val streams = new KafkaStreams(builder.build(), config)
   streams.start()
