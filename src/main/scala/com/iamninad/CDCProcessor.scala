@@ -15,6 +15,7 @@ import io.confluent.kafka.serializers.{
   KafkaAvroDeserializerConfig,
   KafkaAvroSerializer
 }
+import org.apache.kafka.streams.kstream.JoinWindows
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 import scala.collection.JavaConverters._
@@ -65,10 +66,11 @@ object CDCProcessor extends App {
 
     val envelopExtractedMovie: KStreamS[Int, Movie] =
       movieFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
-    val envelopeExtractedSale: KTableS[Int, MovieSales] = salesFilteredStream
-      .map((_: String, value) => (value.after.get.movie_id.get, value.after.get))
-      .groupByKey
-      .reduce((_: MovieSales, newSale: MovieSales) => newSale)
+    val envelopeExtractedSale = salesFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
+//    val envelopeExtractedSale: KTableS[Int, MovieSales] = salesFilteredStream
+//      .map((_: String, value) => (value.after.get.movie_id.get, value.after.get))
+//      .groupByKey
+//      .reduce((_: MovieSales, newSale: MovieSales) => newSale)
 
     envelopExtractedMovie.join(envelopeExtractedSale, (movie: Movie, movieSale: MovieSales) => {
       println("Created Business Event")
@@ -81,7 +83,7 @@ object CDCProcessor extends App {
       val map = Map("movie" -> movieSerialized, "sale" -> salesSerialized)
       BusinessEvent(EventTypes.`MOVIECREATEEVENT`, map)
 
-    })
+    }, JoinWindows.of(3000))
   }
 
   def emitMovieBussinessEventToTopic = {
@@ -102,7 +104,7 @@ object CDCProcessor extends App {
 
       val beforeMovieSerialized = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(before))
       val afterMovieSerialized  = serializer.serialize("events", AppSerdes.movieBEventSerde.movieFormat.to(after))
-
+      println("Movie Update Business Event Created")
       (after.movie_id.get,
        BusinessEvent(EventTypes.`MOVIEUPDATEEVENT`, Map("before" -> beforeMovieSerialized, "after" -> afterMovieSerialized)))
     })
@@ -117,5 +119,14 @@ object CDCProcessor extends App {
 
   private val streams = new KafkaStreams(builder.build(), config)
   streams.start()
+
+  Runtime.getRuntime.addShutdownHook(new Thread() {
+    override def run(): Unit = {
+      println("Running Shutdown Procedure for kafka streams")
+      streams.close()
+
+      streams.cleanUp()
+    }
+  })
 
 }

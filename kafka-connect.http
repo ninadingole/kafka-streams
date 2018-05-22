@@ -7,6 +7,8 @@ Content-Type: application/json
 < test.json
 ###
 
-DELETE http://localhost:8081/subjects/events-2-KSTREAM-REDUCE-STATE-STORE-0000000006-repartition-value
+DELETE http://localhost:8081/subjects/events-value
+
+
 
 ###
