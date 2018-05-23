@@ -40,12 +40,12 @@ object CDCProcessor extends App {
 
   private def buildMovieStream: KStreamS[String, movie.Envelope] = {
     import AppSerdes.movieSerde.consumed
-    builder.stream[String, movie.Envelope](Utils.getTopic("movie"))
+    builder.stream[String, movie.Envelope](Utils.getTopic("movies"))
   }
 
   private def buildMovieSalesStream = {
     import AppSerdes.movieSalesSerde.consumed
-    builder.stream[String, Envelope](Utils.getTopic("movie_sales"))
+    builder.stream[String, Envelope](Utils.getTopic("sales"))
   }
 
   val movieStream = buildMovieStream
@@ -67,10 +67,6 @@ object CDCProcessor extends App {
     val envelopExtractedMovie: KStreamS[Int, Movie] =
       movieFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
     val envelopeExtractedSale = salesFilteredStream.map((id, value) => (value.after.get.movie_id.get, value.after.get))
-//    val envelopeExtractedSale: KTableS[Int, MovieSales] = salesFilteredStream
-//      .map((_: String, value) => (value.after.get.movie_id.get, value.after.get))
-//      .groupByKey
-//      .reduce((_: MovieSales, newSale: MovieSales) => newSale)
 
     envelopExtractedMovie.join(envelopeExtractedSale, (movie: Movie, movieSale: MovieSales) => {
       println("Created Business Event")

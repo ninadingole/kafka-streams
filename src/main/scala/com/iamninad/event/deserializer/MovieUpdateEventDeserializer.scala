@@ -22,7 +22,7 @@ class MovieUpdateEventDeserializer(event: BusinessEvent) {
       val beforeMovie: Movie = AppSerdes.movieBEventSerde.movieFormat.from(genericRecord)
 
       val afterMovieBytes   = event.events("after")
-      val genericRecord1    = deserializer.deserialize(Utils.getTopic("movie"), beforeMovieBytes).asInstanceOf[GenericRecord]
+      val genericRecord1    = deserializer.deserialize(Utils.getTopic("movie"), afterMovieBytes).asInstanceOf[GenericRecord]
       val afterMovie: Movie = AppSerdes.movieBEventSerde.movieFormat.from(genericRecord1)
       if (afterMovie != null) {
         doc = Option(

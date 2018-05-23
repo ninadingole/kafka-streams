@@ -6,6 +6,7 @@ import com.iamninad.event.deserializer.{MovieCreatedEventDeserializer, MovieUpda
 import com.iamninad.model.BusinessEvent
 import com.iamninad.util.EventTypes
 import com.lightbend.kafka.scala.streams.{KStreamS, StreamsBuilderS}
+import com.mongodb.ClientSessionOptions
 import io.confluent.kafka.serializers.{
   AbstractKafkaAvroSerDeConfig,
   KafkaAvroDeserializer,
@@ -67,7 +68,7 @@ object EventProcessor extends App {
     movieDocument.toFuture().map(_.head).onSuccess {
       case data => {
         val document = movie.get.toBsonDocument
-        println(s"Relpacing Movie Information ${movie.get.get("movie_id")}")
+        println(s"Relpacing Movie Information ${movie.get.get("movie_id").get.asString()}")
         document.put("sales", data.get("sales").get)
         movies
           .replaceOne(Filters.eq("_id", data.getObjectId("_id")), document)

@@ -7,8 +7,8 @@ Content-Type: application/json
 < test.json
 ###
 
+DELETE http://localhost:8083/connectors/moviesdemo-connector
+###
+
 DELETE http://localhost:8081/subjects/events-value
-
-
-
 ###
